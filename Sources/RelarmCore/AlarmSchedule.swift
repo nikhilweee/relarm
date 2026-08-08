@@ -4,22 +4,24 @@ public struct AlarmConfiguration: Codable, Equatable {
     public var id: UUID
     public var name: String
     public var isEnabled: Bool
+    public var soundName: String
     public var secondsSinceMidnight: Int
     public var interval: Int
     public var nextFireDate: Date
 
-    public init(id: UUID = UUID(), name: String, isEnabled: Bool = true,
+    public init(id: UUID = UUID(), name: String, isEnabled: Bool = true, soundName: String = "Glass",
                 secondsSinceMidnight: Int, interval: Int, nextFireDate: Date) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
+        self.soundName = soundName
         self.secondsSinceMidnight = secondsSinceMidnight
         self.interval = interval
         self.nextFireDate = nextFireDate
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, isEnabled, secondsSinceMidnight, interval, nextFireDate
+        case id, name, isEnabled, soundName, secondsSinceMidnight, interval, nextFireDate
     }
 
     // Relarm 0.1 stored a single unnamed alarm. Decode it as a useful default
@@ -29,6 +31,7 @@ public struct AlarmConfiguration: Codable, Equatable {
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Alarm"
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        soundName = try container.decodeIfPresent(String.self, forKey: .soundName) ?? "Glass"
         secondsSinceMidnight = try container.decode(Int.self, forKey: .secondsSinceMidnight)
         interval = try container.decode(Int.self, forKey: .interval)
         nextFireDate = try container.decode(Date.self, forKey: .nextFireDate)

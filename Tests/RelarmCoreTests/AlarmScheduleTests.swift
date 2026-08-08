@@ -38,5 +38,6 @@ final class AlarmScheduleTests: XCTestCase {
         let alarm = try JSONDecoder().decode(AlarmConfiguration.self, from: data)
         XCTAssertEqual(alarm.name, "Alarm")
         XCTAssertTrue(alarm.isEnabled)
+        XCTAssertEqual(alarm.soundName, "Glass")
     }
 }
