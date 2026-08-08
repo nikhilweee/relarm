@@ -1,4 +1,6 @@
-// Generates Resources/AppIcon.icns: a repeating bell on a rounded blue gradient.
+// Generates Resources/AppIcon.icns: a bell on a rounded blue gradient. No badge
+// dot here: the app icon is static, and the dot means "an alarm is scheduled" —
+// that state lives on the status bar icon, which swaps symbols to show it.
 import AppKit
 
 func render(_ pixels: Int) -> NSBitmapImageRep {
@@ -16,7 +18,7 @@ func render(_ pixels: Int) -> NSBitmapImageRep {
                ending: NSColor(calibratedRed: 0.08, green: 0.24, blue: 0.67, alpha: 1))!.draw(in: background, angle: -90)
 
     let config = NSImage.SymbolConfiguration(pointSize: rect.width * 0.47, weight: .semibold)
-    if let symbol = NSImage(systemSymbolName: "bell.badge.fill", accessibilityDescription: nil)?
+    if let symbol = NSImage(systemSymbolName: "bell.fill", accessibilityDescription: nil)?
         .withSymbolConfiguration(config) {
         let tinted = NSImage(size: symbol.size)
         tinted.lockFocus()
