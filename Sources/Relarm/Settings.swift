@@ -63,7 +63,8 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
     private let soundPicker = NSPopUpButton()
     private let repeatField = NSTextField()
     private let hintLabel = detailLabel()
-    private let defaultHint = "e.g. 5m, 1:30, or 1h 30m"
+    // Colon forms still parse, but mm:ss reads as hours to too many people.
+    private let defaultHint = "e.g. 5m, 90s, or 1h 30m"
     private var window: SheetWindow!
     private var previewSound: NSSound?
     private weak var parentWindow: NSWindow?

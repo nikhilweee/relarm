@@ -62,7 +62,7 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         soundPicker.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
         repeatField.stringValue = compactDuration(existing?.interval ?? Prefs.defaultInterval)
-        repeatField.placeholderString = "e.g. 5m, 1:30, or 1h 30m"
+        repeatField.placeholderString = "e.g. 5m, 90s, or 1h 30m"
         repeatField.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
         // Always laid out, empty when valid: the sheet is sized to fit, so a
