@@ -51,6 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         }
         sortAlarms()
         saveAndSchedule()
+        // Alarms saved by an earlier install never asked for permission here.
+        if alarms.contains(where: \.isEnabled) { requestNotificationsIfNeeded() }
     }
 
     @objc private func editFromMenu(_ sender: NSMenuItem) {
@@ -228,10 +230,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     }
 
     private func deliverAlarm(for alarm: AlarmConfiguration, nextAlarm: AlarmConfiguration?) {
-        // Notifications are emitted only when the app's scheduled timer fires.
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { [weak self] settings in
-            guard settings.authorizationStatus == .authorized else { return }
+            let canNotify = [.authorized, .provisional].contains(settings.authorizationStatus)
+            // The sound needs no permission. It loops only when a notification offers Stop.
+            DispatchQueue.main.async {
+                self?.playAlarmSound(for: alarm.id, soundName: alarm.soundName, loops: canNotify)
+            }
+            guard canNotify else { return }
             let formatter = DateFormatter()
             formatter.timeStyle = .short
             let content = UNMutableNotificationContent()
@@ -245,10 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             content.categoryIdentifier = NotificationAction.category
             content.userInfo = ["alarmID": alarm.id.uuidString]
             let request = UNNotificationRequest(identifier: "relarm.ring.\(UUID().uuidString)", content: content, trigger: nil)
-            center.add(request) { error in
-                guard error == nil else { return }
-                DispatchQueue.main.async { self?.playAlarmSound(for: alarm.id, soundName: alarm.soundName) }
-            }
+            center.add(request)
         }
     }
 
@@ -260,10 +263,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         center.setNotificationCategories([category])
     }
 
-    private func playAlarmSound(for id: UUID, soundName: String) {
+    private func playAlarmSound(for id: UUID, soundName: String, loops: Bool) {
         stopAlarmSound(for: id)
         guard let sound = NSSound(named: NSSound.Name(soundName)) else { return }
-        sound.loops = true
+        sound.loops = loops
         sound.play()
         ringingSounds[id] = sound
     }
