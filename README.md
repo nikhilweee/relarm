@@ -8,8 +8,8 @@ A minimal menu bar app for repeating alarms on macOS.
   Add from the toolbar; Return, Delete and right-click edit, duplicate or remove a row.
 - An alarm has a name, a first alert time, a repeat interval (`5m`, `90s`,
   `1h 30m`) and a sound, and repeats until you disable or delete it.
-- Alerts arrive as macOS notifications with Snooze and Stop, and ring until
-  stopped. Alarms missed while the app was closed are skipped, not replayed.
+- Alerts arrive as macOS notifications and ring until you click Stop, the
+  notification, or its close button. Alarms missed while the app was closed are skipped, not replayed.
 - Settings… sets the sound and interval that new alarms start with.
 
 ## Install

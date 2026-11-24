@@ -5,9 +5,7 @@ import RelarmCore
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotificationCenterDelegate {
     private enum NotificationAction {
         static let category = "RELARM_ALARM"
-        static let snooze = "RELARM_SNOOZE"
         static let stop = "RELARM_STOP"
-        static let snoozeSeconds = 10 * 60
     }
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -265,10 +263,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     }
 
     private func registerNotificationActions(on center: UNUserNotificationCenter) {
-        let snooze = UNNotificationAction(identifier: NotificationAction.snooze, title: "Snooze", options: [])
+        // A single action shows as a button; two or more collapse into an Options menu.
         let stop = UNNotificationAction(identifier: NotificationAction.stop, title: "Stop", options: [])
-        let category = UNNotificationCategory(identifier: NotificationAction.category, actions: [snooze, stop],
-                                              intentIdentifiers: [], options: [])
+        // Without customDismissAction, macOS never reports the ✕, so the sound kept ringing.
+        let category = UNNotificationCategory(identifier: NotificationAction.category, actions: [stop],
+                                              intentIdentifiers: [], options: [.customDismissAction])
         center.setNotificationCategories([category])
     }
 
@@ -337,20 +336,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             completionHandler()
             return
         }
+        // Stop, a click on the notification, and its ✕ all mean the alarm was seen.
         DispatchQueue.main.async { [weak self] in
-            guard let self else { completionHandler(); return }
-            switch response.actionIdentifier {
-            case NotificationAction.stop, UNNotificationDefaultActionIdentifier, UNNotificationDismissActionIdentifier:
-                self.stopAlarmSound(for: id)
-            case NotificationAction.snooze:
-                self.stopAlarmSound(for: id)
-                if let index = self.alarms.firstIndex(where: { $0.id == id && $0.isEnabled }) {
-                    self.alarms[index].nextFireDate = Date().addingTimeInterval(Double(NotificationAction.snoozeSeconds))
-                    self.saveAndSchedule()
-                }
-            default:
-                break
-            }
+            self?.stopAlarmSound(for: id)
             completionHandler()
         }
     }
