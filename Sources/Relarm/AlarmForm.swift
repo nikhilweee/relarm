@@ -16,6 +16,7 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
 
     private let nameField = NSTextField()
     private let timePicker = NSDatePicker()
+    private let nowButton = NSButton()
     private let soundPicker = NSPopUpButton()
     private let repeatField = NSTextField()
     private let validationLabel = detailLabel()
@@ -44,15 +45,28 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         nameField.stringValue = existing?.name ?? ""
         nameField.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
-        timePicker.datePickerElements = [.hourMinute]
-        timePicker.datePickerStyle = .textFieldAndStepper
+        timePicker.datePickerElements = [.hourMinuteSecond]
+        timePicker.datePickerStyle = .textField
         if let existing {
             timePicker.dateValue = Calendar.current.date(byAdding: .second, value: existing.secondsSinceMidnight,
                                                           to: Calendar.current.startOfDay(for: Date()))!
         } else {
             timePicker.dateValue = Date()
         }
-        timePicker.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
+        nowButton.title = "Now"
+        nowButton.bezelStyle = .rounded
+        nowButton.target = self
+        nowButton.action = #selector(fillCurrentTime)
+        nowButton.toolTip = "Use the current time"
+        // The picker takes whatever width the button leaves in the control column.
+        let timeRow = NSStackView(views: [timePicker, nowButton])
+        timeRow.orientation = .horizontal
+        timeRow.alignment = .centerY
+        timeRow.spacing = 8
+        timeRow.distribution = .fill
+        timePicker.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        nowButton.setContentHuggingPriority(.required, for: .horizontal)
+        timeRow.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
         soundPicker.addItems(withTitles: AlarmSounds.names)
         soundPicker.selectItem(withTitle: existing?.soundName ?? Prefs.defaultSoundName)
@@ -91,7 +105,7 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         root.addArrangedSubview(title)
         root.setCustomSpacing(Metrics.sectionSpacing, after: title)
         root.addArrangedSubview(formRow("Name", nameField))
-        root.addArrangedSubview(formRow("First alert", timePicker))
+        root.addArrangedSubview(formRow("First alert", timeRow))
         root.addArrangedSubview(formRow("Repeat every", repeatField))
         root.addArrangedSubview(formRow("Sound", soundPicker))
         let validationRow = formRow("", validationLabel)
@@ -105,7 +119,8 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         window.contentView = root
         sizeToFit(window, content: root)
         nameField.nextKeyView = timePicker
-        timePicker.nextKeyView = repeatField
+        timePicker.nextKeyView = nowButton
+        nowButton.nextKeyView = repeatField
         repeatField.nextKeyView = soundPicker
         soundPicker.nextKeyView = cancel
         window.initialFirstResponder = nameField
@@ -126,16 +141,21 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         sound.play()
     }
 
+    @objc private func fillCurrentTime() {
+        timePicker.dateValue = Date()
+    }
+
     @objc private func submit() {
         let name = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return showValidation("Give this alarm a name.") }
-        let interval = parseDuration(repeatField.stringValue)
-        guard let interval, interval >= Prefs.minimumInterval else {
-            return showValidation("Repeat at least once a minute.")
+        // parseDuration rejects zero, so one second is the shortest repeat.
+        guard let interval = parseDuration(repeatField.stringValue) else {
+            return showValidation("Enter a repeat like 5m, 30s, or 1h 30m.")
         }
-        let components = Calendar.current.dateComponents([.hour, .minute], from: timePicker.dateValue)
+        let time = Calendar.current.dateComponents([.hour, .minute, .second], from: timePicker.dateValue)
+        let secondsSinceMidnight = (time.hour ?? 0) * 3600 + (time.minute ?? 0) * 60 + (time.second ?? 0)
         result = .saved(Selection(name: name, soundName: soundPicker.titleOfSelectedItem ?? Prefs.defaultSoundName,
-                                  secondsSinceMidnight: (components.hour ?? 0) * 3600 + (components.minute ?? 0) * 60,
+                                  secondsSinceMidnight: secondsSinceMidnight,
                                   interval: interval))
         previewSound?.stop()
         finish()
@@ -169,14 +189,15 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
     }
 
     private func wireDatePickerKeyViews() {
-        // NSDatePicker owns internal text fields for hour and minute. Connect
-        // every one to Sound using AppKit's native key-view chain.
+        // NSDatePicker owns internal text fields for each time unit. Connect
+        // every one to the Now button using AppKit's native key-view chain.
         func setNextKeyViewRecursively(_ view: NSView, next: NSView) {
             view.nextKeyView = next
             view.subviews.forEach { setNextKeyViewRecursively($0, next: next) }
         }
         nameField.nextKeyView = timePicker
-        setNextKeyViewRecursively(timePicker, next: repeatField)
+        setNextKeyViewRecursively(timePicker, next: nowButton)
+        nowButton.nextKeyView = repeatField
         repeatField.nextKeyView = soundPicker
         soundPicker.nextKeyView = window.defaultButtonCell?.controlView ?? nameField
     }

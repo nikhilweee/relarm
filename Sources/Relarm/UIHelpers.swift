@@ -77,6 +77,24 @@ func confirmDelete(of name: String, in parent: NSWindow?, completion: @escaping 
     alert.beginSheetModal(for: parent) { completion($0 == .alertFirstButtonReturn) }
 }
 
+private let shortClock: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return formatter
+}()
+
+private let mediumClock: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .medium
+    return formatter
+}()
+
+// Most alarms sit on the minute, so ":00" would only add clutter.
+func clockLabel(_ date: Date) -> String {
+    let hasSeconds = Calendar.current.component(.second, from: date) != 0
+    return (hasSeconds ? mediumClock : shortClock).string(from: date)
+}
+
 func compactDuration(_ seconds: Int) -> String {
     let hours = seconds / 3600
     let minutes = (seconds % 3600) / 60

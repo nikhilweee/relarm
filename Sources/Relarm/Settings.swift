@@ -9,7 +9,6 @@ enum Prefs {
     static let defaultIntervalKey = "defaultInterval"
 
     static let fallbackInterval = 5 * 60
-    static let minimumInterval = 60
 
     static var alarms: [AlarmConfiguration] {
         get {
@@ -46,7 +45,7 @@ enum Prefs {
     static var defaultInterval: Int {
         get {
             let seconds = UserDefaults.standard.integer(forKey: defaultIntervalKey)
-            return seconds >= minimumInterval ? seconds : fallbackInterval
+            return seconds > 0 ? seconds : fallbackInterval
         }
         set { UserDefaults.standard.set(newValue, forKey: defaultIntervalKey) }
     }
@@ -189,7 +188,7 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
 
     // Invalid text is reverted rather than saved, so the stored default stays usable.
     private func commitInterval() {
-        guard let interval = parseDuration(repeatField.stringValue), interval >= Prefs.minimumInterval else {
+        guard let interval = parseDuration(repeatField.stringValue) else {
             NSSound.beep()
             refresh()
             return
@@ -207,14 +206,10 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
     func controlTextDidChange(_ notification: Notification) {
         let text = repeatField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return showHint(defaultHint, isError: false) }
-        guard let interval = parseDuration(text) else {
+        guard parseDuration(text) != nil else {
             return showHint("Unknown interval \"\(text)\"", isError: true)
         }
-        if interval < Prefs.minimumInterval {
-            showHint("Repeat at least once a minute", isError: true)
-        } else {
-            showHint(defaultHint, isError: false)
-        }
+        showHint(defaultHint, isError: false)
     }
 
     func controlTextDidEndEditing(_ notification: Notification) {

@@ -94,6 +94,12 @@ public func parseDuration(_ input: String) -> Int? {
     return total > 0 && leftover.isEmpty ? total : nil
 }
 
+/// Seconds under a minute; otherwise minutes rounded up, so it never reads "0 min".
+public func countdownLabel(_ seconds: Int) -> String {
+    guard seconds >= 60 else { return durationLabel(max(seconds, 1)) }
+    return durationLabel((seconds + 59) / 60 * 60)
+}
+
 public func durationLabel(_ seconds: Int) -> String {
     let hours = seconds / 3600
     let minutes = (seconds % 3600) / 60

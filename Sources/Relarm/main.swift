@@ -248,13 +248,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
                 self?.playAlarmSound(for: alarm.id, soundName: alarm.soundName, loops: canNotify)
             }
             guard canNotify else { return }
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
             let content = UNMutableNotificationContent()
             content.title = alarm.name
-            let now = formatter.string(from: Date())
+            // The scheduled time, so a timer that fires a few ms late still reads ":00".
+            let now = clockLabel(alarm.nextFireDate)
             if let nextAlarm {
-                content.body = "\(now). Next: \(formatter.string(from: nextAlarm.nextFireDate))"
+                content.body = "\(now). Next: \(clockLabel(nextAlarm.nextFireDate))"
             } else {
                 content.body = "\(now). No upcoming alarms."
             }
@@ -315,10 +314,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         if enabled.isEmpty {
             menu.addItem(NSMenuItem(title: "No upcoming alarms", action: nil, keyEquivalent: ""))
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "hh:mm a"
             for alarm in enabled {
-                addItem(to: menu, title: "\(formatter.string(from: alarm.nextFireDate)): \(alarm.name)",
+                addItem(to: menu, title: "\(clockLabel(alarm.nextFireDate)): \(alarm.name)",
                         action: #selector(editFromMenu(_:)), represents: alarm.id.uuidString)
             }
         }

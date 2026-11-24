@@ -29,12 +29,8 @@ final class AlarmListWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow!
     private var formController: AlarmFormController?
     private var settingsController: SettingsController?
-
-    private static let clock: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter
-    }()
+    // Keeps the relative "Next" column current while the window is open.
+    private var ticker: Timer?
 
     override init() {
         super.init()
@@ -93,6 +89,11 @@ final class AlarmListWindowController: NSObject, NSWindowDelegate {
     }
 
     func show() {
+        if ticker == nil {
+            let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.reloadNextColumn() }
+            RunLoop.main.add(timer, forMode: .common)
+            ticker = timer
+        }
         window.makeKeyAndOrderFront(nil)
         // An accessory app doesn't always win activation; this raises the window anyway.
         window.orderFrontRegardless()
@@ -152,7 +153,15 @@ final class AlarmListWindowController: NSObject, NSWindowDelegate {
 
     @objc private func addAlarm() { onAdd?() }
 
+    private func reloadNextColumn() {
+        let column = tableView.column(withIdentifier: Column.next)
+        guard column >= 0, !alarms.isEmpty else { return }
+        tableView.reloadData(forRowIndexes: IndexSet(alarms.indices), columnIndexes: [column])
+    }
+
     func windowWillClose(_ notification: Notification) {
+        ticker?.invalidate()
+        ticker = nil
         onClose?()
     }
 
@@ -254,7 +263,6 @@ extension AlarmListWindowController: NSTableViewDataSource, NSTableViewDelegate 
 
     private func font(for identifier: NSUserInterfaceItemIdentifier) -> NSFont {
         switch identifier {
-        case Column.time: return .monospacedDigitSystemFont(ofSize: 20, weight: .regular)
         case Column.name: return .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
         default: return .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         }
@@ -262,9 +270,11 @@ extension AlarmListWindowController: NSTableViewDataSource, NSTableViewDelegate 
 
     private func text(for identifier: NSUserInterfaceItemIdentifier, alarm: AlarmConfiguration) -> String {
         switch identifier {
-        case Column.time: return Self.clock.string(from: timeOfDay(alarm.secondsSinceMidnight))
+        case Column.time: return clockLabel(timeOfDay(alarm.secondsSinceMidnight))
         case Column.name: return alarm.name
-        case Column.next: return alarm.isEnabled ? "Next \(Self.clock.string(from: alarm.nextFireDate))" : "Disabled"
+        case Column.next:
+            guard alarm.isEnabled else { return "Disabled" }
+            return "In \(countdownLabel(Int(alarm.nextFireDate.timeIntervalSinceNow.rounded(.up))))"
         default: return "Every \(durationLabel(alarm.interval))"
         }
     }

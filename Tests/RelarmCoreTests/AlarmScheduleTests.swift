@@ -33,6 +33,14 @@ final class AlarmScheduleTests: XCTestCase {
         XCTAssertNil(parseDuration("nope"))
     }
 
+    func testCountdownLabel() {
+        XCTAssertEqual(countdownLabel(0), "1 sec")
+        XCTAssertEqual(countdownLabel(45), "45 sec")
+        XCTAssertEqual(countdownLabel(60), "1 min")
+        XCTAssertEqual(countdownLabel(61), "2 min")
+        XCTAssertEqual(countdownLabel(5400), "1 hr 30 min")
+    }
+
     func testLegacyAlarmDecodesWithUsefulDefaults() throws {
         let data = #"{"secondsSinceMidnight":3600,"interval":300,"nextFireDate":0}"#.data(using: .utf8)!
         let alarm = try JSONDecoder().decode(AlarmConfiguration.self, from: data)
