@@ -42,5 +42,5 @@ triggers on `v*` tags only, which is how v0.2.0 sat unreleased until v0.3.0.
 
 The cask exists in two places: `Casks/relarm.rb` here (canonical copy) and the
 `homebrew-tap` repo (the copy `brew` installs from). Step 3 keeps them in sync.
-Because the app is ad-hoc signed, the cask needs its `postflight` step to clear
+Because the app is ad-hoc signed, the cask needs its `postflight_steps` block to clear
 the quarantine flag, or the first launch hits Gatekeeper.
