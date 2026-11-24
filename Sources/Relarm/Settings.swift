@@ -7,6 +7,9 @@ enum Prefs {
     static let legacyAlarmKey = "activeAlarm"
     static let defaultSoundKey = "defaultSound"
     static let defaultIntervalKey = "defaultInterval"
+    static let checksForUpdatesKey = "checksForUpdates"
+    static let lastUpdateCheckKey = "lastUpdateCheck"
+    static let skippedVersionKey = "skippedVersion"
 
     static let fallbackInterval = 5 * 60
 
@@ -49,6 +52,22 @@ enum Prefs {
         }
         set { UserDefaults.standard.set(newValue, forKey: defaultIntervalKey) }
     }
+
+    // On unless turned off, so a fresh install hears about updates.
+    static var checksForUpdates: Bool {
+        get { UserDefaults.standard.object(forKey: checksForUpdatesKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: checksForUpdatesKey) }
+    }
+
+    static var lastUpdateCheck: Date? {
+        get { UserDefaults.standard.object(forKey: lastUpdateCheckKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: lastUpdateCheckKey) }
+    }
+
+    static var skippedVersion: String? {
+        get { UserDefaults.standard.string(forKey: skippedVersionKey) }
+        set { UserDefaults.standard.set(newValue, forKey: skippedVersionKey) }
+    }
 }
 
 enum AlarmSounds {
@@ -62,6 +81,7 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
     private let soundPicker = NSPopUpButton()
     private let repeatField = NSTextField()
     private let hintLabel = detailLabel()
+    private let updatesCheckbox = NSButton(checkboxWithTitle: "Check automatically", target: nil, action: nil)
     // Colon forms still parse, but mm:ss reads as hours to too many people.
     private let defaultHint = "e.g. 5m, 90s, or 1h 30m"
     private var window: SheetWindow!
@@ -89,6 +109,9 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
         repeatField.delegate = self
         repeatField.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
+        updatesCheckbox.target = self
+        updatesCheckbox.action = #selector(updatesToggled)
+
         let separator = NSBox()
         separator.boxType = .separator
         separator.widthAnchor.constraint(equalToConstant: Metrics.contentWidth).isActive = true
@@ -106,13 +129,15 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
 
         let repeatRow = formRow("Default repeat", repeatField)
         let hintRow = formRow("", hintLabel)
+        let updatesRow = formRow("Updates", updatesCheckbox)
         root.addArrangedSubview(title)
         root.setCustomSpacing(Metrics.sectionSpacing, after: title)
         root.addArrangedSubview(formRow("Default sound", soundPicker))
         root.addArrangedSubview(repeatRow)
         root.setCustomSpacing(6, after: repeatRow)
         root.addArrangedSubview(hintRow)
-        root.setCustomSpacing(Metrics.sectionSpacing, after: hintRow)
+        root.addArrangedSubview(updatesRow)
+        root.setCustomSpacing(Metrics.sectionSpacing, after: updatesRow)
         root.addArrangedSubview(separator)
         root.setCustomSpacing(Metrics.rowSpacing, after: separator)
         root.addArrangedSubview(footer)
@@ -172,6 +197,11 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
         soundPicker.selectItem(withTitle: Prefs.defaultSoundName)
         repeatField.stringValue = compactDuration(Prefs.defaultInterval)
         showHint(defaultHint, isError: false)
+        updatesCheckbox.state = Prefs.checksForUpdates ? .on : .off
+    }
+
+    @objc private func updatesToggled() {
+        Prefs.checksForUpdates = updatesCheckbox.state == .on
     }
 
     @objc private func openRepo() {

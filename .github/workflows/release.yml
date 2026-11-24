@@ -13,6 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: ./build.sh
-      - run: gh release create "$GITHUB_REF_NAME" Relarm.zip --generate-notes
+      - run: gh release create "$GITHUB_REF_NAME" Relarm.zip Relarm.dmg --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}

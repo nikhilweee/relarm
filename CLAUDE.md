@@ -2,7 +2,7 @@
 
 Minimal macOS menu bar app for repeating alarms. Swift + AppKit, built with SPM
 (no Xcode project). `build.sh` wraps the binary into `Relarm.app` (ad-hoc
-signed) and zips it.
+signed), then packs it as `Relarm.zip` and `Relarm.dmg`.
 
 ## Layout
 
@@ -11,7 +11,8 @@ signed) and zips it.
 - `Sources/Relarm` : the app. `main.swift` holds `AppDelegate` (status item,
   timers, notifications); `AlarmList.swift` the alarms window (toolbar +
   `NSTableView`); `AlarmForm.swift` and `Settings.swift` the two sheets;
-  `UIHelpers.swift` shared metrics and window helpers.
+  `UIHelpers.swift` shared metrics and window helpers; `Updater.swift` the
+  GitHub Releases update check and in-place install.
 - `scripts/icon.swift` generates `Resources/AppIcon.icns`. Run it with
   `swift scripts/icon.swift` from the repo root after editing.
 
@@ -28,7 +29,9 @@ over new hardcoded numbers.
    in `Casks/relarm.rb`.
 2. Tag and push: `git tag v0.3.0 && git push origin v0.3.0`. The GitHub
    Actions workflow (`.github/workflows/release.yml`) builds a universal
-   `Relarm.app` and creates a GitHub Release with `Relarm.zip`.
+   `Relarm.app` and creates a GitHub Release with `Relarm.zip` and `Relarm.dmg`.
+   The in-app updater downloads `Relarm.zip` from the latest release, so keep
+   that asset name.
 3. Update the `sha256` in `Casks/relarm.rb`, then copy the cask to
    https://github.com/nikhilweee/homebrew-tap as `Casks/relarm.rb` and push.
 

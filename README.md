@@ -36,6 +36,12 @@ Then launch Relarm from /Applications. The app is ad-hoc signed because it has
 no Apple Developer account behind it. The cask clears the quarantine flag after
 install, so Gatekeeper lets the first launch through.
 
+Or download `Relarm.dmg` from the
+[latest release](https://github.com/nikhilweee/relarm/releases/latest) and drag
+Relarm into Applications. Gatekeeper blocks the first launch of a downloaded
+app that isn't notarized. Open System Settings › Privacy & Security and click
+Open Anyway.
+
 ## Build from source
 
 ```sh
@@ -43,6 +49,6 @@ install, so Gatekeeper lets the first launch through.
 open Relarm.app
 ```
 
-This builds `Relarm.app` and a `Relarm.zip` to distribute. With full Xcode the
-app is universal (arm64 and x86_64). Under CommandLineTools it targets only
-your Mac's architecture.
+This builds `Relarm.app`, plus a `Relarm.zip` and a `Relarm.dmg` to
+distribute. With full Xcode the app is universal (arm64 and x86_64). Under
+CommandLineTools it targets only your Mac's architecture.

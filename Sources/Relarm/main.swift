@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     private var timers: [UUID: Timer] = [:]
     private var ringingSounds: [UUID: NSSound] = [:]
     private var listWindow: AlarmListWindowController?
+    private let updater = Updater()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let notificationCenter = UNUserNotificationCenter.current()
@@ -28,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         // Installed up front; only displayed while the app is a regular app.
         NSApp.mainMenu = makeMainMenu()
         restoreAlarms()
+        updater.startAutomaticChecks()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -66,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
 
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About Relarm", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Check for Updates…", action: #selector(Updater.checkForUpdates), keyEquivalent: "").target = updater
         appMenu.addItem(.separator())
         let settings = appMenu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self

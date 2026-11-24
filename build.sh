@@ -10,11 +10,18 @@ else
     BIN=$(swift build -c release --show-bin-path)/Relarm
 fi
 
-rm -rf Relarm.app Relarm.zip
+rm -rf Relarm.app Relarm.zip Relarm.dmg
 mkdir -p Relarm.app/Contents/MacOS Relarm.app/Contents/Resources
 cp "$BIN" Relarm.app/Contents/MacOS/Relarm
 cp Resources/Info.plist Relarm.app/Contents/Info.plist
 cp Resources/AppIcon.icns Relarm.app/Contents/Resources/AppIcon.icns
 codesign --force --sign - Relarm.app
 ditto -c -k --keepParent Relarm.app Relarm.zip
-echo "Built Relarm.app"
+
+# Drag-to-install image: the app beside an /Applications link.
+STAGE=$(mktemp -d)
+cp -R Relarm.app "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
+hdiutil create -quiet -volname Relarm -srcfolder "$STAGE" -format UDZO Relarm.dmg
+rm -rf "$STAGE"
+echo "Built Relarm.app, Relarm.zip, Relarm.dmg"
