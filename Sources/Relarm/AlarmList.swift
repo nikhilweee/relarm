@@ -18,6 +18,7 @@ private enum Column {
 final class AlarmListWindowController: NSObject, NSWindowDelegate {
     var onAdd: (() -> Void)?
     var onEdit: ((UUID) -> Void)?
+    var onDuplicate: ((UUID) -> Void)?
     var onToggle: ((UUID, Bool) -> Void)?
     var onDelete: ((UUID) -> Void)?
     var onClose: (() -> Void)?
@@ -137,6 +138,7 @@ final class AlarmListWindowController: NSObject, NSWindowDelegate {
     private func rowMenu() -> NSMenu {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Edit Alarm…", action: #selector(editSelected), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Duplicate Alarm", action: #selector(duplicateSelected), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Delete Alarm…", action: #selector(deleteSelected), keyEquivalent: ""))
         menu.items.forEach { $0.target = self }
         return menu
@@ -167,6 +169,11 @@ final class AlarmListWindowController: NSObject, NSWindowDelegate {
     @objc private func editSelected() {
         guard let alarm = targetedAlarm() else { return }
         onEdit?(alarm.id)
+    }
+
+    @objc private func duplicateSelected() {
+        guard let alarm = targetedAlarm() else { return }
+        onDuplicate?(alarm.id)
     }
 
     @objc private func deleteSelected() {

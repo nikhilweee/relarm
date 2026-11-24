@@ -5,7 +5,7 @@ A minimal menu bar app for repeating alarms on macOS.
 - Click the bell for the next alarms, to open the alarms window, or to quit.
   The bell carries a dot while an alarm is enabled; click an alarm to edit it.
 - The alarms window lists what you have scheduled, with a switch on each row.
-  Add from the toolbar; Return, Delete and right-click edit or remove a row.
+  Add from the toolbar; Return, Delete and right-click edit, duplicate or remove a row.
 - An alarm has a name, a first alert time, a repeat interval (`5m`, `90s`,
   `1h 30m`) and a sound, and repeats until you disable or delete it.
 - Alerts arrive as macOS notifications with Snooze and Stop, and ring until

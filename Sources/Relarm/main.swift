@@ -108,6 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
                 guard let self, let alarm = self.alarms.first(where: { $0.id == id }) else { return }
                 self.presentForm(existing: alarm)
             }
+            controller.onDuplicate = { [weak self] id in self?.duplicateAlarm(id: id) }
             controller.onToggle = { [weak self] id, enabled in self?.setEnabled(id: id, enabled: enabled) }
             controller.onDelete = { [weak self] id in self?.deleteAlarm(id: id) }
             controller.onClose = { NSApp.setActivationPolicy(.accessory) }
@@ -173,6 +174,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             )
         }
         if !enabled { stopAlarmSound(for: id) }
+        saveAndSchedule()
+    }
+
+    // The copy keeps the original's schedule and on/off state, under a new id.
+    private func duplicateAlarm(id: UUID) {
+        guard var copy = alarms.first(where: { $0.id == id }) else { return }
+        copy.id = UUID()
+        copy.name += " copy"
+        alarms.append(copy)
         saveAndSchedule()
     }
 
