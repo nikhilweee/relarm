@@ -7,6 +7,7 @@ enum Prefs {
     static let legacyAlarmKey = "activeAlarm"
     static let defaultSoundKey = "defaultSound"
     static let defaultIntervalKey = "defaultInterval"
+    static let defaultRingDurationKey = "defaultRingDuration"
     static let checksForUpdatesKey = "checksForUpdates"
     static let lastUpdateCheckKey = "lastUpdateCheck"
     static let skippedVersionKey = "skippedVersion"
@@ -53,6 +54,17 @@ enum Prefs {
         set { UserDefaults.standard.set(newValue, forKey: defaultIntervalKey) }
     }
 
+    static var defaultRingDuration: Int {
+        get {
+            guard let seconds = UserDefaults.standard.object(forKey: defaultRingDurationKey) as? Int,
+                  AlarmConfiguration.ringDurationChoices.contains(seconds) else {
+                return AlarmConfiguration.defaultRingDuration
+            }
+            return seconds
+        }
+        set { UserDefaults.standard.set(newValue, forKey: defaultRingDurationKey) }
+    }
+
     // On unless turned off, so a fresh install hears about updates.
     static var checksForUpdates: Bool {
         get { UserDefaults.standard.object(forKey: checksForUpdatesKey) as? Bool ?? true }
@@ -79,7 +91,8 @@ enum AlarmSounds {
 
 final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate {
     private let soundPicker = NSPopUpButton()
-    private let repeatField = NSTextField()
+    private let repeatField = makeTextField()
+    private let ringDurationPicker = makeRingDurationPicker(untilStoppedTitle: "Until stopped")
     private let hintLabel = detailLabel()
     private let updatesCheckbox = NSButton(checkboxWithTitle: "Check automatically", target: nil, action: nil)
     // Colon forms still parse, but mm:ss reads as hours to too many people.
@@ -109,6 +122,9 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
         repeatField.delegate = self
         repeatField.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
+        ringDurationPicker.target = self
+        ringDurationPicker.action = #selector(ringDurationChanged)
+
         updatesCheckbox.target = self
         updatesCheckbox.action = #selector(updatesToggled)
 
@@ -136,6 +152,7 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
         root.addArrangedSubview(repeatRow)
         root.setCustomSpacing(6, after: repeatRow)
         root.addArrangedSubview(hintRow)
+        root.addArrangedSubview(formRow("Default duration", ringDurationPicker))
         root.addArrangedSubview(updatesRow)
         root.setCustomSpacing(Metrics.sectionSpacing, after: updatesRow)
         root.addArrangedSubview(separator)
@@ -197,7 +214,12 @@ final class SettingsController: NSObject, NSWindowDelegate, NSTextFieldDelegate 
         soundPicker.selectItem(withTitle: Prefs.defaultSoundName)
         repeatField.stringValue = compactDuration(Prefs.defaultInterval)
         showHint(defaultHint, isError: false)
+        ringDurationPicker.selectItem(withTag: Prefs.defaultRingDuration)
         updatesCheckbox.state = Prefs.checksForUpdates ? .on : .off
+    }
+
+    @objc private func ringDurationChanged() {
+        Prefs.defaultRingDuration = ringDurationPicker.selectedTag()
     }
 
     @objc private func updatesToggled() {

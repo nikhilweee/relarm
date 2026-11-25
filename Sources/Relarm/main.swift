@@ -11,7 +11,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var alarms: [AlarmConfiguration] = []
     private var timers: [UUID: Timer] = [:]
-    private var ringingSounds: [UUID: NSSound] = [:]
+    // One alarm rings at a time: a new one takes over from whatever is ringing.
+    private var ringing: (id: UUID, sound: NSSound)?
+    private var ringTimeout: Timer?
     private var listWindow: AlarmListWindowController?
     private let updater = Updater()
 
@@ -33,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        ringingSounds.values.forEach { $0.stop() }
+        stopRinging()
     }
 
     // Reopening the app (Finder, `open`, Launchpad) brings the alarms window back.
@@ -155,7 +157,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             isEnabled: existing?.isEnabled ?? true,
             soundName: selection.soundName,
             secondsSinceMidnight: selection.secondsSinceMidnight, interval: selection.interval,
-            nextFireDate: AlarmSchedule.initialFireDate(secondsSinceMidnight: selection.secondsSinceMidnight)
+            nextFireDate: AlarmSchedule.initialFireDate(secondsSinceMidnight: selection.secondsSinceMidnight),
+            ringDuration: selection.ringDuration
         )
         if let index = alarms.firstIndex(where: { $0.id == alarm.id }) {
             alarms[index] = alarm
@@ -246,7 +249,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             let canNotify = [.authorized, .provisional].contains(settings.authorizationStatus)
             // The sound needs no permission. It loops only when a notification offers Stop.
             DispatchQueue.main.async {
-                self?.playAlarmSound(for: alarm.id, soundName: alarm.soundName, loops: canNotify)
+                self?.playAlarmSound(for: alarm, loops: canNotify)
             }
             guard canNotify else { return }
             let content = UNMutableNotificationContent()
@@ -274,16 +277,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         center.setNotificationCategories([category])
     }
 
-    private func playAlarmSound(for id: UUID, soundName: String, loops: Bool) {
-        stopAlarmSound(for: id)
-        guard let sound = NSSound(named: NSSound.Name(soundName)) else { return }
+    private func playAlarmSound(for alarm: AlarmConfiguration, loops: Bool) {
+        stopRinging()
+        guard let sound = NSSound(named: NSSound.Name(alarm.soundName)) else { return }
         sound.loops = loops
         sound.play()
-        ringingSounds[id] = sound
+        ringing = (alarm.id, sound)
+        // An unattended loop stops after the alarm's ring duration; the notification stays.
+        guard loops, alarm.ringDuration > 0 else { return }
+        let timer = Timer(timeInterval: TimeInterval(alarm.ringDuration), repeats: false) { [weak self] _ in
+            self?.stopRinging()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        ringTimeout = timer
     }
 
+    // Deleting or turning off an alarm silences it only if it is the one ringing.
     private func stopAlarmSound(for id: UUID) {
-        ringingSounds.removeValue(forKey: id)?.stop()
+        if ringing?.id == id { stopRinging() }
+    }
+
+    private func stopRinging() {
+        ringTimeout?.invalidate()
+        ringTimeout = nil
+        ringing?.sound.stop()
+        ringing = nil
     }
 
     private func requestNotificationsIfNeeded() {
@@ -333,15 +351,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        guard response.notification.request.content.categoryIdentifier == NotificationAction.category,
-              let text = response.notification.request.content.userInfo["alarmID"] as? String,
-              let id = UUID(uuidString: text) else {
+        guard response.notification.request.content.categoryIdentifier == NotificationAction.category else {
             completionHandler()
             return
         }
-        // Stop, a click on the notification, and its ✕ all mean the alarm was seen.
+        // Stop, a click on the notification, and its ✕ all mean the user is at the
+        // Mac. Only one alarm rings at a time, so any of them silences it, even on
+        // the notification of an alarm that a newer one took over from.
         DispatchQueue.main.async { [weak self] in
-            self?.stopAlarmSound(for: id)
+            self?.stopRinging()
             completionHandler()
         }
     }

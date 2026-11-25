@@ -15,7 +15,7 @@ interval, and the alarm keeps ringing at that cadence until you switch it off.
 
 - Lives in the menu bar, with the next alarms one click away
 - Repeats every `90s`, `5m`, `1h 30m` or any other interval
-- Rings until you stop it from the notification
+- Rings until you stop it from the notification, or for a set time per alarm
 - Shows a live countdown to each alarm's next ring
 - Turns alarms on and off with a switch
 - Duplicates an alarm from its right-click menu

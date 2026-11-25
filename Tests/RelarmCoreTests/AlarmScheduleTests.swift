@@ -47,5 +47,13 @@ final class AlarmScheduleTests: XCTestCase {
         XCTAssertEqual(alarm.name, "Alarm")
         XCTAssertTrue(alarm.isEnabled)
         XCTAssertEqual(alarm.soundName, "Glass")
+        XCTAssertEqual(alarm.ringDuration, AlarmConfiguration.defaultRingDuration)
+    }
+
+    func testRingDurationRoundTrips() throws {
+        let alarm = AlarmConfiguration(name: "Stretch", secondsSinceMidnight: 0, interval: 60,
+                                       nextFireDate: Date(timeIntervalSince1970: 0), ringDuration: 0)
+        let decoded = try JSONDecoder().decode(AlarmConfiguration.self, from: JSONEncoder().encode(alarm))
+        XCTAssertEqual(decoded, alarm)
     }
 }

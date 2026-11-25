@@ -8,9 +8,15 @@ public struct AlarmConfiguration: Codable, Equatable {
     public var secondsSinceMidnight: Int
     public var interval: Int
     public var nextFireDate: Date
+    // Seconds an unattended alarm keeps ringing; 0 means until stopped.
+    public var ringDuration: Int
+
+    public static let defaultRingDuration = 5 * 60
+    public static let ringDurationChoices = [15, 30, 60, 2 * 60, 5 * 60, 10 * 60, 0]
 
     public init(id: UUID = UUID(), name: String, isEnabled: Bool = true, soundName: String = "Glass",
-                secondsSinceMidnight: Int, interval: Int, nextFireDate: Date) {
+                secondsSinceMidnight: Int, interval: Int, nextFireDate: Date,
+                ringDuration: Int = defaultRingDuration) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
@@ -18,10 +24,11 @@ public struct AlarmConfiguration: Codable, Equatable {
         self.secondsSinceMidnight = secondsSinceMidnight
         self.interval = interval
         self.nextFireDate = nextFireDate
+        self.ringDuration = ringDuration
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, isEnabled, soundName, secondsSinceMidnight, interval, nextFireDate
+        case id, name, isEnabled, soundName, secondsSinceMidnight, interval, nextFireDate, ringDuration
     }
 
     // Relarm 0.1 stored a single unnamed alarm. Decode it as a useful default
@@ -35,6 +42,8 @@ public struct AlarmConfiguration: Codable, Equatable {
         secondsSinceMidnight = try container.decode(Int.self, forKey: .secondsSinceMidnight)
         interval = try container.decode(Int.self, forKey: .interval)
         nextFireDate = try container.decode(Date.self, forKey: .nextFireDate)
+        // Alarms saved before per-alarm ring durations ring for the default.
+        ringDuration = try container.decodeIfPresent(Int.self, forKey: .ringDuration) ?? Self.defaultRingDuration
     }
 }
 

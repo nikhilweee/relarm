@@ -1,4 +1,5 @@
 import AppKit
+import RelarmCore
 
 // One set of metrics so every window lays out on the same grid.
 enum Metrics {
@@ -9,6 +10,8 @@ enum Metrics {
     static let controlWidth: CGFloat = 220
     static let contentWidth: CGFloat = 380
     static let rowLabelSpacing: CGFloat = 12
+    // Lines a borderless date picker's text up with a rounded text field's.
+    static let timePickerInset: CGFloat = 0
     // What's left for hint and error text sharing a row with the label column.
     static var detailWidth: CGFloat { contentWidth - labelWidth - rowLabelSpacing }
 }
@@ -35,6 +38,25 @@ func formRow(_ labelText: String, _ control: NSView) -> NSStackView {
     row.alignment = .centerY
     row.spacing = Metrics.rowLabelSpacing
     return row
+}
+
+// The default square bezel looks out of place beside the rounded popups and buttons.
+func makeTextField() -> NSTextField {
+    let field = NSTextField()
+    field.bezelStyle = .roundedBezel
+    return field
+}
+
+// Ring duration choices, tagged with their seconds, shared by the alarm sheet
+// and the settings default. Each caller names the zero choice to suit its label.
+func makeRingDurationPicker(untilStoppedTitle: String) -> NSPopUpButton {
+    let picker = NSPopUpButton()
+    for seconds in AlarmConfiguration.ringDurationChoices {
+        picker.addItem(withTitle: seconds > 0 ? durationLabel(seconds) : untilStoppedTitle)
+        picker.lastItem?.tag = seconds
+    }
+    picker.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
+    return picker
 }
 
 // NSStackView's fittingSize drops the trailing inset, so drive the width from a

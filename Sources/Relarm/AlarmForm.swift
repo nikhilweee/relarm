@@ -12,13 +12,15 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         let soundName: String
         let secondsSinceMidnight: Int
         let interval: Int
+        let ringDuration: Int
     }
 
-    private let nameField = NSTextField()
+    private let nameField = makeTextField()
     private let timePicker = NSDatePicker()
     private let nowButton = NSButton()
     private let soundPicker = NSPopUpButton()
-    private let repeatField = NSTextField()
+    private let repeatField = makeTextField()
+    private let stopAfterPicker = makeRingDurationPicker(untilStoppedTitle: "Never")
     private let validationLabel = detailLabel()
     private var window: NSWindow!
     private var result: Result?
@@ -47,6 +49,22 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
 
         timePicker.datePickerElements = [.hourMinuteSecond]
         timePicker.datePickerStyle = .textField
+        // NSDatePicker has no rounded bezel, so a borderless picker sits on an
+        // empty rounded field to match the text fields around it.
+        timePicker.isBezeled = false
+        timePicker.isBordered = false
+        timePicker.drawsBackground = false
+        let timeBox = makeTextField()
+        timeBox.isEditable = false
+        timeBox.isSelectable = false
+        timeBox.refusesFirstResponder = true
+        timeBox.addSubview(timePicker)
+        timePicker.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            timePicker.leadingAnchor.constraint(equalTo: timeBox.leadingAnchor, constant: Metrics.timePickerInset),
+            timePicker.trailingAnchor.constraint(lessThanOrEqualTo: timeBox.trailingAnchor),
+            timePicker.centerYAnchor.constraint(equalTo: timeBox.centerYAnchor),
+        ])
         if let existing {
             timePicker.dateValue = Calendar.current.date(byAdding: .second, value: existing.secondsSinceMidnight,
                                                           to: Calendar.current.startOfDay(for: Date()))!
@@ -58,13 +76,13 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         nowButton.target = self
         nowButton.action = #selector(fillCurrentTime)
         nowButton.toolTip = "Use the current time"
-        // The picker takes whatever width the button leaves in the control column.
-        let timeRow = NSStackView(views: [timePicker, nowButton])
+        // The time box takes whatever width the button leaves in the control column.
+        let timeRow = NSStackView(views: [timeBox, nowButton])
         timeRow.orientation = .horizontal
         timeRow.alignment = .centerY
         timeRow.spacing = 8
         timeRow.distribution = .fill
-        timePicker.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        timeBox.setContentHuggingPriority(.defaultLow, for: .horizontal)
         nowButton.setContentHuggingPriority(.required, for: .horizontal)
         timeRow.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
 
@@ -74,6 +92,8 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         soundPicker.action = #selector(previewSelectedSound)
         soundPicker.focusRingType = .default
         soundPicker.widthAnchor.constraint(equalToConstant: Metrics.controlWidth).isActive = true
+
+        stopAfterPicker.selectItem(withTag: existing?.ringDuration ?? Prefs.defaultRingDuration)
 
         repeatField.stringValue = compactDuration(existing?.interval ?? Prefs.defaultInterval)
         repeatField.placeholderString = "e.g. 5m, 90s, or 1h 30m"
@@ -108,6 +128,7 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         root.addArrangedSubview(formRow("First alert", timeRow))
         root.addArrangedSubview(formRow("Repeat every", repeatField))
         root.addArrangedSubview(formRow("Sound", soundPicker))
+        root.addArrangedSubview(formRow("Stop after", stopAfterPicker))
         let validationRow = formRow("", validationLabel)
         root.addArrangedSubview(validationRow)
         root.setCustomSpacing(Metrics.sectionSpacing, after: validationRow)
@@ -122,7 +143,8 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         timePicker.nextKeyView = nowButton
         nowButton.nextKeyView = repeatField
         repeatField.nextKeyView = soundPicker
-        soundPicker.nextKeyView = cancel
+        soundPicker.nextKeyView = stopAfterPicker
+        stopAfterPicker.nextKeyView = cancel
         window.initialFirstResponder = nameField
     }
 
@@ -156,7 +178,7 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         let secondsSinceMidnight = (time.hour ?? 0) * 3600 + (time.minute ?? 0) * 60 + (time.second ?? 0)
         result = .saved(Selection(name: name, soundName: soundPicker.titleOfSelectedItem ?? Prefs.defaultSoundName,
                                   secondsSinceMidnight: secondsSinceMidnight,
-                                  interval: interval))
+                                  interval: interval, ringDuration: stopAfterPicker.selectedTag()))
         previewSound?.stop()
         finish()
     }
@@ -199,7 +221,8 @@ final class AlarmFormController: NSObject, NSWindowDelegate {
         setNextKeyViewRecursively(timePicker, next: nowButton)
         nowButton.nextKeyView = repeatField
         repeatField.nextKeyView = soundPicker
-        soundPicker.nextKeyView = window.defaultButtonCell?.controlView ?? nameField
+        soundPicker.nextKeyView = stopAfterPicker
+        stopAfterPicker.nextKeyView = window.defaultButtonCell?.controlView ?? nameField
     }
 
     func windowWillClose(_ notification: Notification) {
