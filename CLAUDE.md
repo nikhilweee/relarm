@@ -15,6 +15,11 @@ signed), then packs it as `Relarm.zip` and `Relarm.dmg`.
   GitHub Releases update check and in-place install.
 - `scripts/icon.swift` generates `Resources/AppIcon.icns`. Run it with
   `swift scripts/icon.swift` from the repo root after editing.
+- `scripts/screenshots.sh` renders the README shots (`docs/alarms-*.png`,
+  `docs/form-*.png`) offscreen from the real window code, under its own prefs
+  domain so live alarms are untouched. Rerun it after UI changes. The menu bar
+  menu and notifications are outside the app's windows, so shots of those need
+  a manual ⌘⇧4.
 
 Windows are built from stock AppKit controls and sized to fit their content.
 Prefer an existing control over a custom view, and `Metrics` in `UIHelpers.swift`
