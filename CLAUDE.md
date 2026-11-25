@@ -26,7 +26,9 @@ Prefer an existing control over a custom view, and `Metrics` in `UIHelpers.swift
 over new hardcoded numbers.
 
 `swift test` needs full Xcode. Under CommandLineTools it fails with
-`no such module 'XCTest'`; CI has Xcode, so the tests run there.
+`no such module 'XCTest'`; CI has Xcode, so the tests run there: on every push
+to main and every PR (`.github/workflows/test.yml`), and before each release
+build.
 
 ## Releasing
 

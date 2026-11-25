@@ -12,6 +12,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+      # A tag can point at a commit main's test run never saw.
+      - run: swift test
       - run: ./build.sh
       - run: gh release create "$GITHUB_REF_NAME" Relarm.zip Relarm.dmg --generate-notes
         env:
